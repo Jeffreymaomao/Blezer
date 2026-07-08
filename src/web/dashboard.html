@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blezer</title>
+<style>
+  /* ─────────────────────────  Design tokens  ───────────────────────── */
+  :root {
+    --bg: #FBFBFA; --surface: #FFFFFF; --surface-2: #F6F6F5;
+    --border: rgba(0,0,0,.08); --border-strong: rgba(0,0,0,.14);
+    --text: #1D1D1F; --text-2: #6E6E73; --text-3: #9A9AA0;
+    --accent: #0A6CFF; --accent-weak: rgba(10,108,255,.10);
+    --success: #2F9E44; --warning: #C77700; --error: #E5484D;
+    --shadow: 0 1px 2px rgba(0,0,0,.04); --shadow-lg: 0 8px 40px rgba(0,0,0,.12);
+    --r-sm: 8px; --r-md: 12px; --r-full: 999px;
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:40px; --s8:64px;
+    --ease: cubic-bezier(.2,.6,.2,1); --dur: 180ms;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui,
+            "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#0B0B0C; --surface:#151517; --surface-2:#1D1D20;
+    --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.16);
+    --text:#F5F5F7; --text-2:#A1A1A6; --text-3:#77777C;
+    --accent:#4C9AFF; --accent-weak:rgba(76,154,255,.14);
+    --success:#3FD060; --warning:#E9A23B; --error:#FF6166;
+    --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 48px rgba(0,0,0,.6);
+  }}
+  :root[data-theme="dark"] {
+    --bg:#0B0B0C; --surface:#151517; --surface-2:#1D1D20;
+    --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.16);
+    --text:#F5F5F7; --text-2:#A1A1A6; --text-3:#77777C;
+    --accent:#4C9AFF; --accent-weak:rgba(76,154,255,.14);
+    --success:#3FD060; --warning:#E9A23B; --error:#FF6166;
+    --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 48px rgba(0,0,0,.6);
+  }
+
+  /* ─────────────────────────  Base  ───────────────────────── */
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font); font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  h1,h2,h3,p { margin: 0; }
+  button { font-family: inherit; cursor: pointer; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .mono { font-family: var(--mono); }
+  .muted { color: var(--text-2); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+  /* ─────────────────────────  Header  ───────────────────────── */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s3) var(--s5);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: var(--s2); font-weight: 600; font-size: 15px; letter-spacing: -.01em; text-decoration: none; color: inherit; }
+  .brand .mark { width: 26px; height: 26px; display: grid; place-items: center;
+    border-radius: 7px; background: var(--accent-weak); color: var(--accent); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: var(--r-full);
+    font-size: 12px; color: var(--text-2); }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+  .pill.live .dot { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 60%, transparent); animation: ping 2.4s var(--ease) infinite; }
+  .pill.off .dot { background: var(--text-3); animation: none; }
+  @keyframes ping { 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--success) 55%,transparent);} 70%,100%{box-shadow:0 0 0 5px transparent;} }
+  .spacer { flex: 1; }
+
+  /* Segmented control */
+  .seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: var(--r-sm); }
+  .seg button { border: 0; background: transparent; color: var(--text-2); white-space: nowrap;
+    font-size: 13px; font-weight: 500; height: 28px; min-width: 44px; padding: 0 10px;
+    border-radius: 6px; transition: color var(--dur) var(--ease), background var(--dur) var(--ease); }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+  .iconbtn { width: 34px; height: 34px; display: grid; place-items: center;
+    background: transparent; border: 1px solid var(--border); border-radius: var(--r-sm);
+    color: var(--text-2); transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
+  .iconbtn:hover { background: var(--surface-2); color: var(--text); }
+  .iconbtn[aria-pressed="true"] { background: var(--surface-2); color: var(--text); border-color: var(--border-strong); }
+
+  /* ─────────────────────────  Layout  ───────────────────────── */
+  main, #view-settings { max-width: 1120px; margin: 0 auto; padding: var(--s6) var(--s5) var(--s8); }
+  .section { margin-bottom: var(--s6); }
+  .section-label { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--text-3); margin-bottom: var(--s3); }
+
+  /* KPI tiles */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s3); }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s4) var(--s4) var(--s4); }
+  .tile .k { font-size: 12px; color: var(--text-2); margin-bottom: var(--s2); }
+  .tile .v { font-size: 28px; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
+  .tile .v small { font-size: 14px; font-weight: 500; color: var(--text-3); margin-left: 2px; }
+
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+  .card-head { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--border); }
+  .card-head h2 { font-size: 14px; font-weight: 600; }
+  .card-head .count { margin-left: auto; font-size: 12px; color: var(--text-3); }
+
+  /* Vendors */
+  .vendors { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s2) var(--s6); padding: var(--s4); }
+  .vrow { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s3); }
+  .vrow .name { font-size: 13px; }
+  .vrow .meter { grid-column: 1 / -1; height: 4px; border-radius: var(--r-full); background: var(--surface-2); overflow: hidden; }
+  .vrow .meter i { display: block; height: 100%; background: var(--text-3); border-radius: inherit; transition: width var(--dur) var(--ease); }
+  .vrow .n { font-size: 12px; color: var(--text-2); }
+
+  /* Toolbar */
+  .toolbar { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--border); }
+  .search { position: relative; flex: 1; min-width: 0; }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+  .search input { width: 100%; height: 36px; padding: 0 12px 0 34px; font: inherit; font-size: 13px;
+    color: var(--text); background: var(--surface-2); border: 1px solid transparent; border-radius: var(--r-sm);
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+  .search input::placeholder { color: var(--text-3); }
+  .search input:focus { outline: none; background: var(--surface); border-color: var(--accent); }
+  .switch { display: inline-flex; align-items: center; gap: var(--s2); font-size: 13px; color: var(--text-2); user-select: none; white-space: nowrap; }
+  .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .track { width: 38px; height: 22px; border-radius: var(--r-full); background: var(--border-strong); position: relative; transition: background var(--dur) var(--ease); }
+  .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; box-shadow: var(--shadow); transition: transform var(--dur) var(--ease); }
+  .switch input:checked + .track { background: var(--accent); }
+  .switch input:checked + .track::after { transform: translateX(16px); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase;
+    color: var(--text-3); padding: 0; }
+  .th-sort { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px;
+    width: 100%; padding: var(--s2) var(--s4); cursor: pointer; font: inherit; color: inherit;
+    transition: color var(--dur) var(--ease); }
+  .th-sort:hover { color: var(--text-2); }
+  .caret { width: 12px; height: 12px; opacity: 0; transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
+  th[aria-sort="descending"] .th-sort, th[aria-sort="ascending"] .th-sort { color: var(--text); }
+  th[aria-sort="descending"] .caret { opacity: 1; }
+  th[aria-sort="ascending"] .caret { opacity: 1; transform: rotate(180deg); }
+  tbody td { padding: var(--s3) var(--s4); border-top: 1px solid var(--border); vertical-align: middle; }
+  tbody tr { cursor: pointer; transition: background var(--dur) var(--ease); }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr[aria-selected="true"] { background: var(--accent-weak); box-shadow: inset 3px 0 0 var(--accent); }
+  .dev-name { font-weight: 500; letter-spacing: -.005em; }
+  .dev-sub { color: var(--text-2); font-weight: 400; }
+  .tag { display: inline-block; margin-left: 8px; padding: 1px 7px; font-size: 11px; font-weight: 500;
+    color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; vertical-align: 1px; }
+  .tag.rotate { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 35%, var(--border)); }
+  td.id { font-family: var(--mono); font-size: 12px; color: var(--text-3); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  td.num { color: var(--text-2); }
+  td.time { color: var(--text-2); white-space: nowrap; }
+
+  /* Signal meter */
+  .signal { display: inline-flex; align-items: center; gap: 8px; }
+  .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+  .bars i { width: 3px; border-radius: 1px; background: var(--border-strong); }
+  .bars i.on { background: var(--text); }
+  .signal .dbm { font-family: var(--mono); font-size: 12px; color: var(--text-2); min-width: 30px; }
+
+  /* Skeleton + empty */
+  .sk { display: inline-block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--surface-2), var(--border), var(--surface-2));
+    background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .empty { padding: var(--s7) var(--s4); text-align: center; }
+  .empty .ei { width: 40px; height: 40px; margin: 0 auto var(--s3); display: grid; place-items: center;
+    color: var(--text-3); background: var(--surface-2); border-radius: var(--r-md); }
+  .empty h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .empty p { font-size: 13px; color: var(--text-2); max-width: 360px; margin: 0 auto var(--s4); }
+  .btn { height: 34px; padding: 0 14px; font-size: 13px; font-weight: 500; border-radius: var(--r-sm);
+    border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: background var(--dur) var(--ease); }
+  .btn:hover { background: var(--surface-2); }
+
+  /* Drawer */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.28); z-index: 30; opacity: 0; transition: opacity var(--dur) var(--ease); }
+  .scrim.show { opacity: 1; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100dvh; width: 400px; max-width: 92vw; z-index: 31;
+    background: var(--surface); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg);
+    transform: translateX(100%); transition: transform var(--dur) var(--ease);
+    display: flex; flex-direction: column; }
+  .drawer.show { transform: none; }
+  .drawer-head { display: flex; align-items: flex-start; gap: var(--s3); padding: var(--s5) var(--s5) var(--s4); border-bottom: 1px solid var(--border); }
+  .drawer-head .title { flex: 1; min-width: 0; }
+  .drawer-head h2 { font-size: 18px; font-weight: 600; letter-spacing: -.01em; word-break: break-word; }
+  .drawer-head .sub { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .drawer-body { padding: var(--s5); overflow-y: auto; }
+  .meta { display: grid; grid-template-columns: auto 1fr; gap: var(--s3) var(--s4); font-size: 13px; }
+  .meta dt { color: var(--text-3); }
+  .meta dd { margin: 0; text-align: right; word-break: break-word; }
+  .meta .tag { margin-left: 0; }
+  .spark-wrap { margin-top: var(--s5); }
+  .spark-wrap .lab { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--s3); }
+  .spark-wrap .lab .now { font-family: var(--mono); font-size: 20px; font-weight: 600; }
+  .spark { width: 100%; height: 96px; display: block; }
+  .spark path.line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .spark path.area { fill: var(--accent-weak); stroke: none; }
+
+  /* Settings page */
+  .set-group { margin-bottom: var(--s5); }
+  .set-group:last-child { margin-bottom: 0; }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); min-height: 34px; margin-bottom: var(--s3); font-size: 13px; }
+  .set-row:last-child { margin-bottom: 0; }
+  .set-row > span { color: var(--text); }
+  .set-group > .seg { width: 100%; }
+  .set-group > .seg button { flex: 1; }
+  select.select { height: 34px; padding: 0 10px; font: inherit; font-size: 13px; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); }
+  select.select:focus { outline: none; border-color: var(--accent); }
+  .saved { font-size: 12px; color: var(--success); opacity: 0; transition: opacity var(--dur) var(--ease); white-space: nowrap; }
+
+  /* Settings page (全頁檢視) */
+  .page-head { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s5); }
+  .page-title { font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  .set-page { max-width: 480px; }
+  .set-page .set-group + .set-group { border-top: 1px solid var(--border); padding-top: var(--s5); }
+
+  /* Responsive */
+  @media (max-width: 860px) {
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .vendors { grid-template-columns: 1fr; }
+    main, #view-settings { padding: var(--s5) var(--s4) var(--s7); }
+  }
+  @media (max-width: 640px) {
+    header { padding: var(--s3) var(--s4); gap: var(--s2); }
+    .brand .label { display: none; }
+    #statusText { display: none; }
+    .pill { padding: 0 7px; }
+    .seg button { min-width: auto; padding: 0 9px; }
+    td.id, th.id, td.num.count, th.count { display: none; }
+    .drawer { top: auto; bottom: 0; height: auto; max-height: 88dvh; width: 100%; max-width: 100%;
+      border-left: 0; border-top: 1px solid var(--border); border-radius: var(--r-md) var(--r-md) 0 0;
+      transform: translateY(100%); }
+    .drawer.show { transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="#/" aria-label="回到看板">
+      <span class="mark" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>
+      </span>
+      <span class="label">Blezer</span>
+    </a>
+    <span class="pill live" id="status"><span class="dot"></span><span id="statusText">連線中</span></span>
+    <span class="spacer"></span>
+    <div class="seg" id="win-seg" role="group" aria-label="時間範圍">
+      <button data-win="300" aria-pressed="true">5 分</button>
+      <button data-win="1800" aria-pressed="false">30 分</button>
+      <button data-win="3600" aria-pressed="false">1 小時</button>
+    </div>
+    <button class="iconbtn" id="theme" aria-label="切換深色 / 淺色">
+      <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="ic-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+    <button class="iconbtn" id="settings-btn" aria-label="設定">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="tiles" id="tiles">
+        <div class="tile"><div class="k">在場裝置</div><div class="v" id="t-dev"><span class="sk" style="width:34px"></span></div></div>
+        <div class="tile"><div class="k">已識別</div><div class="v" id="t-known"><span class="sk" style="width:34px"></span></div></div>
+        <div class="tile"><div class="k">觀測筆數</div><div class="v" id="t-obs"><span class="sk" style="width:48px"></span></div></div>
+        <div class="tile"><div class="k">平均訊號</div><div class="v" id="t-rssi"><span class="sk" style="width:56px"></span></div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <div class="card-head"><h2>廠牌分布</h2><span class="count" id="v-count"></span></div>
+        <div class="vendors" id="vendors"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <div class="card-head"><h2>即時裝置</h2></div>
+        <div class="toolbar">
+          <div class="search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="filter" aria-label="搜尋裝置" placeholder="搜尋名稱、機型、廠牌或識別碼…" autocomplete="off" spellcheck="false">
+          </div>
+          <label class="switch"><input type="checkbox" id="identified"><span class="track"></span>只顯示已識別</label>
+        </div>
+        <table>
+          <thead><tr>
+            <th data-sort="name"><button class="th-sort" type="button">裝置<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></th>
+            <th data-sort="rssi"><button class="th-sort" type="button">訊號<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></th>
+            <th class="count" data-sort="count"><button class="th-sort" type="button">次數<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></th>
+            <th data-sort="last"><button class="th-sort" type="button">最後出現<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></th>
+            <th class="id" data-sort="id"><button class="th-sort" type="button">識別碼<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="裝置詳情" hidden>
+    <div class="drawer-head">
+      <div class="title"><h2 id="d-name">—</h2><div class="sub" id="d-sub"></div></div>
+      <button class="iconbtn" id="d-close" aria-label="關閉">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <dl class="meta" id="d-meta"></dl>
+      <div class="spark-wrap">
+        <div class="lab"><span class="section-label" style="margin:0">RSSI 趨勢</span><span class="now mono" id="d-now">—</span></div>
+        <svg class="spark" id="d-spark" viewBox="0 0 300 96" preserveAspectRatio="none"></svg>
+        <p class="muted" id="d-sparknote" style="font-size:12px;margin-top:8px"></p>
+      </div>
+    </div>
+  </aside>
+
+  <section id="view-settings" aria-label="設定" hidden>
+    <div class="page-head">
+      <a class="iconbtn" href="#/" id="settings-back" aria-label="返回看板">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </a>
+      <h1 class="page-title">設定</h1>
+      <span class="spacer"></span>
+      <span class="saved" id="s-saved">已儲存</span>
+    </div>
+    <div class="set-page">
+      <p class="muted" style="font-size:13px; margin-bottom:var(--s5)">偏好會儲存在這個瀏覽器。</p>
+      <div class="set-group">
+        <div class="section-label">外觀</div>
+        <div class="seg" id="pref-theme" role="group" aria-label="外觀">
+          <button data-theme="light" aria-pressed="false">淺色</button>
+          <button data-theme="dark" aria-pressed="false">深色</button>
+          <button data-theme="system" aria-pressed="false">跟隨系統</button>
+        </div>
+      </div>
+      <div class="set-group">
+        <div class="section-label">預設時間範圍</div>
+        <div class="seg" id="pref-window" role="group" aria-label="預設時間範圍">
+          <button data-win="300" aria-pressed="false">5 分</button>
+          <button data-win="1800" aria-pressed="false">30 分</button>
+          <button data-win="3600" aria-pressed="false">1 小時</button>
+        </div>
+      </div>
+      <div class="set-group">
+        <div class="section-label">列表</div>
+        <div class="set-row">
+          <label for="pref-sortkey">預設排序</label>
+          <select class="select" id="pref-sortkey">
+            <option value="name">裝置</option>
+            <option value="rssi">訊號</option>
+            <option value="count">次數</option>
+            <option value="last">最後出現</option>
+            <option value="id">識別碼</option>
+          </select>
+        </div>
+        <div class="set-row">
+          <span>排序方向</span>
+          <div class="seg" id="pref-sortdir" role="group" aria-label="排序方向">
+            <button data-dir="desc" aria-pressed="false">遞減</button>
+            <button data-dir="asc" aria-pressed="false">遞增</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <span>預設只顯示已識別</span>
+          <label class="switch" aria-label="預設只顯示已識別"><input type="checkbox" id="pref-known"><span class="track"></span></label>
+        </div>
+        <div class="set-row">
+          <span>時間顯示</span>
+          <div class="seg" id="pref-timefmt" role="group" aria-label="時間顯示">
+            <button data-fmt="rel" aria-pressed="false">相對</button>
+            <button data-fmt="abs" aria-pressed="false">絕對</button>
+          </div>
+        </div>
+      </div>
+  </section>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const state = { window: 300, devices: [], selected: null, loaded: false, sort: { key: "rssi", dir: "desc" }, timeFormat: "rel" };
+
+/* ── helpers ── */
+const esc = (s) => s == null ? "" : String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const now = () => Math.floor(Date.now()/1000);
+const fmtAgo = (ts) => { const s = Math.max(0, now()-ts);
+  if (s < 5) return "剛剛"; if (s < 60) return s+" 秒前";
+  if (s < 3600) return Math.floor(s/60)+" 分前"; return Math.floor(s/3600)+" 時前"; };
+const fmtAbs = (ts) => { const d = new Date(ts*1000); const p = (n) => String(n).padStart(2,"0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}`; };
+const fmtTime = (ts) => state.timeFormat === "abs" ? fmtAbs(ts) : fmtAgo(ts);
+const isKnown = (d) => !!(d.local_name || d.model);
+// RSSI: -55↑=4格 … 弱=0。null=未知。
+const level = (r) => r==null ? 0 : r>=-55?4 : r>=-65?3 : r>=-72?2 : r>=-82?1 : 0;
+const meter = (r) => { let h=""; for (let i=1;i<=4;i++) h+=`<i class="${i<=level(r)?"on":""}" style="height:${3+i*2.5}px"></i>`;
+  return `<span class="signal"><span class="bars">${h}</span><span class="dbm">${r==null?"—":r}</span></span>`; };
+
+/* ── 偏好共用工具 ── */
+// 依 data-* 值把某個 .seg 群組的 aria-pressed 對齊目前狀態。
+function syncSeg(sel, dataKey, val) {
+  document.querySelectorAll(`${sel} button`).forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset[dataKey] === String(val) ? "true" : "false"));
+}
+// 設定頁裡的「已儲存」微回饋。
+function flashSaved() {
+  const el = $("#s-saved"); if (!el) return;
+  el.style.opacity = "1"; clearTimeout(flashSaved._t);
+  flashSaved._t = setTimeout(() => { el.style.opacity = "0"; }, 1200);
+}
+
+/* ── theme(三態:light / dark / system) ── */
+const mqDark = matchMedia("(prefers-color-scheme: dark)");
+function effectiveTheme() {
+  const a = document.documentElement.getAttribute("data-theme");
+  return a || (mqDark.matches ? "dark" : "light");
+}
+function applyTheme(t) {
+  if (t === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+  const dark = effectiveTheme() === "dark";
+  $(".ic-sun").style.display = dark ? "none" : "";
+  $(".ic-moon").style.display = dark ? "" : "none";
+  syncSeg("#pref-theme", "theme", t);
+}
+function setTheme(t) { localStorage.setItem("pref.theme", t); applyTheme(t); flashSaved(); }
+(function initTheme(){
+  let t = localStorage.getItem("pref.theme");
+  if (!t) { const old = localStorage.getItem("theme"); t = old || "system"; if (old) localStorage.setItem("pref.theme", old); }
+  applyTheme(t);
+})();
+mqDark.addEventListener("change", () => { if ((localStorage.getItem("pref.theme") || "system") === "system") applyTheme("system"); });
+$("#theme").addEventListener("click", () => setTheme(effectiveTheme() === "dark" ? "light" : "dark"));
+
+/* ── 顯示偏好 setters(即存即套用,存 localStorage 的 pref.*) ── */
+function setWindow(w) {
+  state.window = w; localStorage.setItem("pref.window", w);
+  syncSeg("#win-seg", "win", w); syncSeg("#pref-window", "win", w);
+  tick();
+}
+function setSort(key, dir) {
+  state.sort = { key, dir }; localStorage.setItem("pref.sort", JSON.stringify(state.sort));
+  $("#pref-sortkey").value = key; syncSeg("#pref-sortdir", "dir", dir);
+  renderDevices();
+}
+function setKnown(v) {
+  $("#identified").checked = v; $("#pref-known").checked = v;
+  localStorage.setItem("pref.known", v ? "1" : "0");
+  renderDevices();
+}
+function setTimeFmt(f) {
+  state.timeFormat = f; localStorage.setItem("pref.timefmt", f);
+  syncSeg("#pref-timefmt", "fmt", f); renderDevices();
+}
+// 開機時把 pref.* 讀進 state 並對齊各控制項的 UI。
+function loadPrefs() {
+  const w = +localStorage.getItem("pref.window");
+  if ([300, 1800, 3600].includes(w)) state.window = w;
+  try { const s = JSON.parse(localStorage.getItem("pref.sort")); if (s && s.key) state.sort = s; } catch {}
+  state.timeFormat = localStorage.getItem("pref.timefmt") === "abs" ? "abs" : "rel";
+  if (localStorage.getItem("pref.known") === "1") $("#identified").checked = true;
+  $("#pref-known").checked = $("#identified").checked;
+  $("#pref-sortkey").value = state.sort.key;
+  syncSeg("#win-seg", "win", state.window); syncSeg("#pref-window", "win", state.window);
+  syncSeg("#pref-sortdir", "dir", state.sort.dir); syncSeg("#pref-timefmt", "fmt", state.timeFormat);
+}
+
+/* ── 時間範圍 + 設定控制項 ── */
+$("#win-seg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setWindow(+b.dataset.win); });
+$("#pref-window").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { setWindow(+b.dataset.win); flashSaved(); } });
+$("#pref-theme").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setTheme(b.dataset.theme); });
+$("#pref-sortdir").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { setSort(state.sort.key, b.dataset.dir); flashSaved(); } });
+$("#pref-timefmt").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { setTimeFmt(b.dataset.fmt); flashSaved(); } });
+$("#pref-sortkey").addEventListener("change", (e) => { setSort(e.target.value, state.sort.dir); flashSaved(); });
+$("#pref-known").addEventListener("change", (e) => { setKnown(e.target.checked); flashSaved(); });
+
+/* ── data ── */
+async function tick() {
+  try {
+    const [devs, stats] = await Promise.all([
+      fetch(`/api/devices?window=${state.window}`).then(r => r.json()),
+      fetch(`/api/stats?window=${state.window}`).then(r => r.json()),
+    ]);
+    state.devices = devs; state.loaded = true;
+    setStatus(true);
+    renderTiles(stats, devs); renderVendors(stats); renderDevices();
+    if (state.selected && !devs.some(d => d.id === state.selected)) { /* keep drawer, data may lag */ }
+  } catch (e) { setStatus(false); }
+}
+function setStatus(live) {
+  const el = $("#status");
+  el.classList.toggle("live", live); el.classList.toggle("off", !live);
+  $("#statusText").textContent = live ? "即時掃描中" : "連線中斷";
+}
+
+function renderTiles(stats, devs) {
+  const known = devs.filter(isKnown).length;
+  $("#t-dev").textContent = stats.device_count;
+  $("#t-known").textContent = known;
+  $("#t-obs").textContent = (stats.observation_count).toLocaleString();
+  $("#t-rssi").innerHTML = stats.rssi_avg==null ? "—" : `${Math.round(stats.rssi_avg)}<small>dBm</small>`;
+  ["#t-dev","#t-known","#t-obs","#t-rssi"].forEach(s => $(s).classList.add("tnum"));
+}
+
+function renderVendors(stats) {
+  const vs = stats.by_vendor || [];
+  const max = Math.max(1, ...vs.map(v => v.count));
+  $("#v-count").textContent = vs.length ? `${vs.length} 家` : "";
+  $("#vendors").innerHTML = vs.length ? vs.map(v => `
+    <div class="vrow">
+      <span class="name">${esc(v.vendor)}</span><span class="n tnum">${v.count}</span>
+      <span class="meter"><i style="width:${Math.round(v.count/max*100)}%"></i></span>
+    </div>`).join("") : `<p class="muted" style="grid-column:1/-1">尚無資料</p>`;
+}
+
+function skeletonRows() {
+  return Array.from({length:6}).map(() =>
+    `<tr><td><span class="sk" style="width:${120+Math.random()*90|0}px"></span></td>
+      <td><span class="sk" style="width:60px"></span></td>
+      <td class="count"><span class="sk" style="width:20px"></span></td>
+      <td><span class="sk" style="width:50px"></span></td>
+      <td class="id"><span class="sk" style="width:120px"></span></td></tr>`).join("");
+}
+
+// 各欄的排序取值;null 一律沉到最後(不受方向影響)。
+const SORT_VAL = {
+  name: (d) => (d.local_name || d.model || d.vendor || "").toLowerCase(),
+  rssi: (d) => d.last_rssi,
+  count: (d) => d.seen_count,
+  last: (d) => d.last_seen,
+  id: (d) => (d.id || "").toLowerCase(),
+};
+function sortDevices(list) {
+  const { key, dir } = state.sort;
+  const val = SORT_VAL[key] || SORT_VAL.rssi;
+  const s = dir === "asc" ? 1 : -1;
+  return [...list].sort((a, b) => {
+    let av = val(a), bv = val(b);
+    const an = av == null || av === "", bn = bv == null || bv === "";
+    if (an && bn) return 0;
+    if (an) return 1;            // 未知永遠在最後
+    if (bn) return -1;
+    if (typeof av === "string") return av.localeCompare(bv, "zh-Hant") * s;
+    return (av - bv) * s;
+  });
+}
+function applySortUI() {
+  document.querySelectorAll("thead th[data-sort]").forEach(th => {
+    const active = th.dataset.sort === state.sort.key;
+    th.setAttribute("aria-sort", active ? (state.sort.dir === "asc" ? "ascending" : "descending") : "none");
+  });
+}
+
+function renderDevices() {
+  applySortUI();
+  const tb = $("#rows");
+  if (!state.loaded) { tb.innerHTML = skeletonRows(); return; }
+  const q = $("#filter").value.trim().toLowerCase();
+  const onlyKnown = $("#identified").checked;
+  let list = state.devices;
+  if (onlyKnown) list = list.filter(isKnown);
+  if (q) list = list.filter(d => [d.local_name,d.model,d.vendor,d.id].some(v => v && String(v).toLowerCase().includes(q)));
+  list = sortDevices(list);
+
+  if (!list.length) { tb.innerHTML = emptyRow(q || onlyKnown); return; }
+
+  tb.innerHTML = list.map(d => {
+    const name = d.local_name;
+    const detail = d.model && d.model !== d.local_name ? d.model : null;
+    const primary = name || detail || d.vendor || "未知裝置";
+    const sub = name && detail ? `<span class="dev-sub"> · ${esc(detail)}</span>` : "";
+    const tag = d.vendor && (name || detail) ? `<span class="tag">${esc(d.vendor)}</span>` : "";
+    const rotating = d.rotating_id ? `<span class="tag rotate" title="Find My 會輪替廣播識別碼">輪替 ID</span>` : "";
+    const sel = d.id === state.selected ? ' aria-selected="true"' : "";
+    return `<tr data-id="${esc(d.id)}" tabindex="0" role="button"${sel}>
+      <td><span class="dev-name">${esc(primary)}</span>${sub}${tag}${rotating}</td>
+      <td>${meter(d.last_rssi)}</td>
+      <td class="num count tnum">${d.seen_count}</td>
+      <td class="time">${fmtTime(d.last_seen)}</td>
+      <td class="id" title="${esc(d.id)}">${esc(d.id)}</td>
+    </tr>`;
+  }).join("");
+}
+
+function emptyRow(filtered) {
+  const icon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`;
+  const bt = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>`;
+  return `<tr><td colspan="5"><div class="empty">
+    <div class="ei">${filtered ? icon : bt}</div>
+    <h3>${filtered ? "找不到符合的裝置" : "尚未偵測到裝置"}</h3>
+    <p>${filtered ? "試試不同的關鍵字,或清除篩選條件。" : "掃描器正在監聽附近的 BLE 廣播,裝置會在出現時列在這裡。"}</p>
+    ${filtered ? `<button class="btn" id="clearf">清除篩選</button>` : ""}
+  </div></td></tr>`;
+}
+
+$("#filter").addEventListener("input", renderDevices);
+$("#identified").addEventListener("change", (e) => setKnown(e.target.checked));
+// 欄位標題排序:點同欄切換方向,點新欄用合理預設(數值/時間→大到小,文字→A→Z)。排序會被記為預設偏好。
+document.querySelector("thead").addEventListener("click", (e) => {
+  const th = e.target.closest("th[data-sort]"); if (!th) return;
+  const key = th.dataset.sort;
+  const dir = state.sort.key === key ? (state.sort.dir === "asc" ? "desc" : "asc")
+            : ((key === "name" || key === "id") ? "asc" : "desc");
+  setSort(key, dir);
+});
+$("#rows").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-id]"); if (tr) openDrawer(tr.dataset.id); });
+$("#rows").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") { const tr = e.target.closest("tr[data-id]"); if (tr) { e.preventDefault(); openDrawer(tr.dataset.id); } }
+});
+document.addEventListener("click", (e) => { if (e.target.id === "clearf") { $("#filter").value=""; $("#identified").checked=false; renderDevices(); } });
+
+/* ── drawer ── */
+async function openDrawer(id) {
+  const d = state.devices.find(x => x.id === id); if (!d) return;
+  state.selected = id; renderDevices();
+  const name = d.local_name || d.model || d.vendor || "未知裝置";
+  $("#d-name").textContent = name;
+  $("#d-sub").textContent = [d.model && d.model!==d.local_name ? d.model : null, d.vendor].filter(Boolean).join(" · ");
+  const company = d.company_id == null ? "—" : `0x${Number(d.company_id).toString(16).toUpperCase().padStart(4,"0")}`;
+  const services = (d.service_uuids || []).length
+    ? d.service_uuids.map(x => `<span class="mono">${esc(x)}</span>`).join("<br>") : "—";
+  const serviceData = Object.entries(d.service_data || {});
+  const serviceEvidence = serviceData.length
+    ? serviceData.map(([uuid, raw]) => `<span class="mono">${esc(uuid)}: ${esc(raw || "(空)")}</span>`).join("<br>") : "—";
+  const identity = d.rotating_id
+    ? `<span class="tag rotate">會輪替</span><br><span class="muted">macOS 不提供真實 BLE MAC，因此同一實體可能顯示成多筆 UUID，不能安全自動合併。</span>`
+    : "目前未偵測到 Find My rolling identity";
+  $("#d-meta").innerHTML = [
+    ["識別碼", `<span class="mono">${esc(id)}</span>`],
+    ["位址型別", d.address_type === "mac" ? "MAC" : "UUID(macOS)"],
+    ["識別穩定性", identity],
+    ["廠牌", esc(d.vendor || "—")],
+    ["解析結果", esc(d.model || "—")],
+    ["本機名稱", esc(d.local_name || "—")],
+    ["Company ID", `<span class="mono">${company}</span>`],
+    ["服務 UUID", services],
+    ["Service Data", serviceEvidence],
+    ["原始廠商資料", d.raw_mfg_hex ? `<span class="mono">${esc(d.raw_mfg_hex)}</span>` : "—"],
+    ["最新訊號", d.last_rssi==null ? "—" : `${d.last_rssi} dBm`],
+    ["出現次數", d.seen_count],
+    ["首次出現", fmtTime(d.first_seen)],
+    ["最後出現", fmtTime(d.last_seen)],
+  ].map(([k,v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+  drawerIn($("#drawer"));
+  $("#d-close").focus();
+  loadHistory(id);
+}
+// 裝置詳情抽屜的進出動畫。
+function drawerIn(el) {
+  $("#scrim").hidden = false; el.hidden = false;
+  requestAnimationFrame(() => { $("#scrim").classList.add("show"); el.classList.add("show"); });
+}
+function drawerOut(el) {
+  $("#scrim").classList.remove("show"); el.classList.remove("show");
+  setTimeout(() => { $("#scrim").hidden = true; el.hidden = true; }, 200);
+}
+function closeDrawer() {
+  state.selected = null; drawerOut($("#drawer")); renderDevices();
+}
+
+/* ── 檢視導覽(hash 路由:#/ 看板、#/settings 設定) ── */
+// 進入設定頁時把各控制項對齊目前狀態。
+function syncSettingsUI() {
+  syncSeg("#pref-theme", "theme", localStorage.getItem("pref.theme") || "system");
+  syncSeg("#win-seg", "win", state.window); syncSeg("#pref-window", "win", state.window);
+  $("#pref-sortkey").value = state.sort.key; syncSeg("#pref-sortdir", "dir", state.sort.dir);
+  $("#pref-known").checked = $("#identified").checked;
+  syncSeg("#pref-timefmt", "fmt", state.timeFormat);
+}
+function showView(name) {
+  const settings = name === "settings";
+  $("main").hidden = settings;
+  $("#view-settings").hidden = !settings;
+  $("#win-seg").style.display = settings ? "none" : "";   // 時間範圍只屬於看板
+  $("#settings-btn").setAttribute("aria-pressed", settings ? "true" : "false");
+  document.title = settings ? "設定 · Blezer" : "Blezer";
+  if (settings) syncSettingsUI();
+  window.scrollTo(0, 0);
+}
+function routeFromHash() { showView(location.hash === "#/settings" ? "settings" : "dashboard"); }
+window.addEventListener("hashchange", routeFromHash);
+// 齒輪:在看板 ↔ 設定間切換。
+$("#settings-btn").addEventListener("click", () => { location.hash = location.hash === "#/settings" ? "#/" : "#/settings"; });
+
+/* ── drawer 關閉(裝置詳情;scrim 只服務它) ── */
+$("#d-close").addEventListener("click", closeDrawer);
+$("#scrim").addEventListener("click", () => { if (!$("#drawer").hidden) closeDrawer(); });
+// Esc:先關裝置抽屜,否則從設定頁返回看板。
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (!$("#drawer").hidden) closeDrawer();
+  else if (location.hash === "#/settings") location.hash = "#/";
+});
+// Cmd+Shift+, 開設定頁(Cmd+, 會被瀏覽器攔去開瀏覽器偏好,故用 Shift 版本可安全捕捉)。
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey && e.shiftKey && e.code === "Comma") { e.preventDefault(); location.hash = "#/settings"; }
+});
+
+async function loadHistory(id) {
+  const spark = $("#d-spark"); spark.innerHTML = ""; $("#d-now").textContent = "—"; $("#d-sparknote").textContent = "";
+  try {
+    const pts = await fetch(`/api/devices/${encodeURIComponent(id)}?window=${Math.max(state.window,1800)}`).then(r => r.json());
+    const rssi = pts.filter(p => p.rssi != null);
+    if (rssi.length < 2) { $("#d-sparknote").textContent = rssi.length ? `僅 ${rssi.length} 筆訊號紀錄,尚不足以繪圖。` : "此範圍內無訊號紀錄。";
+      if (rssi.length) $("#d-now").textContent = rssi[rssi.length-1].rssi + " dBm"; return; }
+    const W=300, H=96, pad=8;
+    const t0=rssi[0].ts, t1=rssi[rssi.length-1].ts || t0+1;
+    const lo=Math.min(...rssi.map(p=>p.rssi))-3, hi=Math.max(...rssi.map(p=>p.rssi))+3;
+    const x=(t)=> t1===t0 ? W/2 : pad+(t-t0)/(t1-t0)*(W-2*pad);
+    const y=(r)=> hi===lo ? H/2 : pad+(hi-r)/(hi-lo)*(H-2*pad);
+    const line = rssi.map((p,i)=>`${i?"L":"M"}${x(p.ts).toFixed(1)},${y(p.rssi).toFixed(1)}`).join(" ");
+    const area = `${line} L${x(t1).toFixed(1)},${H-pad} L${x(t0).toFixed(1)},${H-pad} Z`;
+    spark.innerHTML = `<path class="area" d="${area}"/><path class="line" d="${line}"/>`;
+    $("#d-now").textContent = rssi[rssi.length-1].rssi + " dBm";
+    $("#d-sparknote").textContent = `${rssi.length} 筆訊號 · ${fmtAgo(t0)}至今`;
+  } catch { $("#d-sparknote").textContent = "無法載入歷史資料。"; }
+}
+
+/* ── boot ── */
+loadPrefs();          // 先套用顯示偏好
+routeFromHash();      // 依網址初始 hash 決定顯示看板或設定頁
+renderDevices();      // skeleton first
+tick();
+setInterval(tick, 2000);
+</script>
+</body>
+</html>

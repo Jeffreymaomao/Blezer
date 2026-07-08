@@ -1,0 +1,30 @@
+[package]
+name = "blezer"
+version = "0.1.0"
+edition = "2021"
+description = "BLE device detection & analysis platform — scanner + embedded web dashboard"
+
+[dependencies]
+btleplug = "0.12"
+tokio = { version = "1", features = ["full"] }
+axum = "0.8"
+rusqlite = { version = "0.40", features = ["bundled"] }
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+futures = "0.3"
+dirs = "6"
+
+# 選單列(menu bar)app:雙擊啟動時在主執行緒跑事件迴圈 + 托盤圖示。
+[target.'cfg(target_os = "macos")'.dependencies]
+tray-icon = "0.19"
+tao = "0.30"
+# 解碼內嵌的選單列圖示 PNG(只需 png 解碼器)。
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[profile.release]
+opt-level = 3
+lto = true

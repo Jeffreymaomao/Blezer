@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Blezer</string>
+    <key>CFBundleDisplayName</key>
+    <string>Blezer</string>
+    <key>CFBundleExecutable</key>
+    <string>blezer</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.blezer.cli</string>
+    <!-- Dock / Finder / App 切換器的圖示。package.sh 由 assets/logo.png 產生 Blezer.icns。 -->
+    <key>CFBundleIconFile</key>
+    <string>Blezer</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <!-- 選單列(menu bar)app:可放托盤圖示、不出現在 Dock。
+         注意:不能用 LSBackgroundOnly,那會禁止任何 UI(含選單列圖示)。 -->
+    <key>LSUIElement</key>
+    <true/>
+    <!-- 缺這個 key,CoreBluetooth 首次存取藍牙會直接 SIGABRT(TCC) -->
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Blezer 掃描附近的 Bluetooth Low Energy 廣播,記錄裝置出現紀錄以供分析。</string>
+</dict>
+</plist>

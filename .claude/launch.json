@@ -1,0 +1,20 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "/Users/yangchangmao/Documents/Projects/ble-analyzer/target/release/blezer",
+      "runtimeArgs": [
+        "run",
+        "--no-scan",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8090",
+        "--db",
+        "/Users/yangchangmao/Library/Application Support/Blezer/blezer.db"
+      ],
+      "port": 8090
+    }
+  ]
+}
