@@ -44,7 +44,7 @@ Dashboard:<http://127.0.0.1:8080/>　日誌:`/tmp/blezer.out.log`
 **只跑一次:**
 
 ```bash
-open "dist/Blezer.app" --args run --port 8080
+open "/Applications/Blezer.app" --args run --port 8080
 ```
 
 > DB 預設寫到 `~/Library/Application Support/Blezer/blezer.db`(自動建立)。

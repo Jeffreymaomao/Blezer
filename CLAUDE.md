@@ -29,7 +29,7 @@ blezer stats   [--window 3600]
 CoreBluetooth **SIGABRTs** on first Bluetooth access unless `NSBluetoothAlwaysUsageDescription` is present *and* honored by TCC. Two things must both hold:
 
 1. **The plist must be recognized.** `build.rs` embeds `Info.plist` into the binary's `__TEXT,__info_plist` section, and `package.sh` re-`codesign`s the `.app` so the CodeDirectory hashes it (`Info.plist entries=N`). A linker-signed ad-hoc signature alone is **not** enough.
-2. **The process must be its own TCC "responsible process."** macOS attributes the Bluetooth request to the responsible process, not our binary. When spawned from another GUI app (e.g. a terminal, IDE, or Claude), that app is held responsible and crashes us if it lacks the key. **Launch via launchd** (`open "dist/Blezer.app" --args run ...` or a LaunchAgent) so the app is responsible for itself.
+2. **The process must be its own TCC "responsible process."** macOS attributes the Bluetooth request to the responsible process, not our binary. When spawned from another GUI app (e.g. a terminal, IDE, or Claude), that app is held responsible and crashes us if it lacks the key. **Launch via launchd** (`open "/Applications/Blezer.app" --args run ...` or a LaunchAgent) so the app is responsible for itself.
 
 Consequence: **you cannot run the scanning binary directly from this agent's shell** — it will SIGABRT. To exercise the web UI here, run `--no-scan` (no CoreBluetooth) or launch the `.app` via `open`. DB defaults to `~/Library/Application Support/Blezer/blezer.db` (auto-created); pass `--db` only to override, and use an **absolute** path since launchd cwd is `/`.
 

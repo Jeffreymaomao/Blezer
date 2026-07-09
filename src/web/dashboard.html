@@ -8,7 +8,9 @@
   /* ─────────────────────────  Design tokens  ───────────────────────── */
   :root {
     --bg: #FBFBFA; --surface: #FFFFFF; --surface-2: #F6F6F5;
-    --border: rgba(0,0,0,.08); --border-strong: rgba(0,0,0,.14);
+    /* 邊界顏色以「通道 + 對比倍率」組成,讓設定頁的對比滑桿(--cm)能同時作用於深淺兩種主題 */
+    --border-c: 0,0,0; --cm: 1;
+    --border: rgba(var(--border-c), calc(.08 * var(--cm))); --border-strong: rgba(var(--border-c), calc(.15 * var(--cm)));
     --text: #1D1D1F; --text-2: #6E6E73; --text-3: #9A9AA0;
     --accent: #0A6CFF; --accent-weak: rgba(10,108,255,.10);
     --success: #2F9E44; --warning: #C77700; --error: #E5484D;
@@ -22,7 +24,7 @@
   }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
     --bg:#0B0B0C; --surface:#151517; --surface-2:#1D1D20;
-    --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.16);
+    --border-c: 255,255,255;
     --text:#F5F5F7; --text-2:#A1A1A6; --text-3:#77777C;
     --accent:#4C9AFF; --accent-weak:rgba(76,154,255,.14);
     --success:#3FD060; --warning:#E9A23B; --error:#FF6166;
@@ -30,12 +32,16 @@
   }}
   :root[data-theme="dark"] {
     --bg:#0B0B0C; --surface:#151517; --surface-2:#1D1D20;
-    --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.16);
+    --border-c: 255,255,255;
     --text:#F5F5F7; --text-2:#A1A1A6; --text-3:#77777C;
     --accent:#4C9AFF; --accent-weak:rgba(76,154,255,.14);
     --success:#3FD060; --warning:#E9A23B; --error:#FF6166;
     --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 48px rgba(0,0,0,.6);
   }
+
+  /* 對比:三階段(1 標準 / 2 中 / 3 高),放大邊界不透明度讓區塊界線更清楚 */
+  :root[data-contrast="2"] { --cm: 2.1; }
+  :root[data-contrast="3"] { --cm: 3.4; }
 
   /* ─────────────────────────  Base  ───────────────────────── */
   * { box-sizing: border-box; }
@@ -63,8 +69,8 @@
     border-bottom: 1px solid var(--border);
   }
   .brand { display: flex; align-items: center; gap: var(--s2); font-weight: 600; font-size: 15px; letter-spacing: -.01em; text-decoration: none; color: inherit; }
-  .brand .mark { width: 26px; height: 26px; display: grid; place-items: center;
-    border-radius: 7px; background: var(--accent-weak); color: var(--accent); }
+  .brand .mark { width: 26px; height: 26px; display: block; border-radius: 7px; overflow: hidden; }
+  .brand .mark svg { width: 100%; height: 100%; display: block; }
   .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
     border: 1px solid var(--border); border-radius: var(--r-full);
     font-size: 12px; color: var(--text-2); }
@@ -93,26 +99,11 @@
   .section-label { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
     color: var(--text-3); margin-bottom: var(--s3); }
 
-  /* KPI tiles */
-  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s3); }
-  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s4) var(--s4) var(--s4); }
-  .tile .k { font-size: 12px; color: var(--text-2); margin-bottom: var(--s2); }
-  .tile .v { font-size: 28px; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
-  .tile .v small { font-size: 14px; font-weight: 500; color: var(--text-3); margin-left: 2px; }
-
   /* Card */
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
   .card-head { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--border); }
   .card-head h2 { font-size: 14px; font-weight: 600; }
   .card-head .count { margin-left: auto; font-size: 12px; color: var(--text-3); }
-
-  /* Vendors */
-  .vendors { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s2) var(--s6); padding: var(--s4); }
-  .vrow { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s3); }
-  .vrow .name { font-size: 13px; }
-  .vrow .meter { grid-column: 1 / -1; height: 4px; border-radius: var(--r-full); background: var(--surface-2); overflow: hidden; }
-  .vrow .meter i { display: block; height: 100%; background: var(--text-3); border-radius: inherit; transition: width var(--dur) var(--ease); }
-  .vrow .n { font-size: 12px; color: var(--text-2); }
 
   /* Toolbar */
   .toolbar { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--border); }
@@ -211,18 +202,24 @@
   select.select { height: 34px; padding: 0 10px; font: inherit; font-size: 13px; color: var(--text);
     background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); }
   select.select:focus { outline: none; border-color: var(--accent); }
+
+  /* 對比滑桿(三階段) */
+  .range-group { display: flex; flex-direction: column; gap: var(--s3); }
+  input[type="range"].contrast { width: 100%; margin: 0; accent-color: var(--accent); cursor: pointer; }
+  .range-ticks { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); }
+  .range-ticks span { flex: 1; text-align: center; }
+  .range-ticks span:first-child { text-align: left; }
+  .range-ticks span:last-child { text-align: right; }
   .saved { font-size: 12px; color: var(--success); opacity: 0; transition: opacity var(--dur) var(--ease); white-space: nowrap; }
 
   /* Settings page (全頁檢視) */
-  .page-head { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s5); }
+  .page-head { display: flex; align-items: center; gap: var(--s3); margin: 0 auto var(--s5); max-width: 480px; }
   .page-title { font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
-  .set-page { max-width: 480px; }
+  .set-page { max-width: 480px; margin: 0 auto; }
   .set-page .set-group + .set-group { border-top: 1px solid var(--border); padding-top: var(--s5); }
 
   /* Responsive */
   @media (max-width: 860px) {
-    .tiles { grid-template-columns: repeat(2, 1fr); }
-    .vendors { grid-template-columns: 1fr; }
     main, #view-settings { padding: var(--s5) var(--s4) var(--s7); }
   }
   @media (max-width: 640px) {
@@ -238,13 +235,57 @@
     .drawer.show { transform: none; }
   }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+  /* Copyright */
+  .copyright { text-align: center; padding: var(--s5) var(--s4) var(--s6); font-size: 12px; color: var(--text-3); }
 </style>
 </head>
 <body>
   <header>
     <a class="brand" href="#/" aria-label="回到看板">
       <span class="mark" aria-hidden="true">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>
+        <svg viewBox="0 0 480 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g filter="url(#lg_ii)">
+        <rect x="47" y="47" width="386" height="386" rx="86" fill="#4085CF"/>
+        <rect x="47" y="47" width="386" height="386" rx="86" fill="url(#lg_radial)" fill-opacity="0.05"/>
+        </g>
+        <g filter="url(#lg_d)">
+        <path d="M329.498 165.582C335.575 170.17 336.797 178.839 332.227 184.942C327.643 191.065 318.974 192.276 312.9 187.64L274.917 158.652C267.214 152.774 256.141 158.292 256.141 168.009C256.141 171.711 257.878 175.197 260.829 177.416L329.474 229.029C335.58 233.62 336.815 242.318 332.231 248.44C327.656 254.55 319.017 255.781 312.931 251.19L275.164 222.698C267.33 216.788 256.141 222.402 256.141 232.244C256.141 236.007 257.907 239.549 260.907 241.803L318.145 284.81C329.491 293.336 330.372 310.105 319.981 319.782L265.122 370.875C250.591 384.407 226.983 374.049 226.994 354.145L227.014 316.649C227.024 297.712 205.377 287.019 190.452 298.589L167.896 316.072C160.129 322.093 148.938 320.435 143.231 312.419C137.822 304.819 139.355 294.286 146.703 288.56L183.67 259.753C195.314 250.68 195.396 233.04 183.836 223.859L146.764 194.415C139.719 188.819 138.307 178.644 143.561 171.327C149.146 163.549 160.056 162.009 167.558 167.941L190.278 185.904C205.171 197.679 227.023 187.015 227.012 167.977L226.993 133.851C226.983 115.048 248.364 104.317 263.328 115.616L329.498 165.582ZM254.268 326.651C254.397 332.94 261.861 336.127 266.46 331.856L289.269 310.674C292.583 307.596 292.329 302.259 288.737 299.513L265.121 281.456C260.285 277.758 253.335 281.307 253.461 287.411L254.268 326.651Z" fill="white"/>
+        </g>
+        <defs>
+        <filter id="lg_ii" x="44" y="44" width="392" height="392" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+        <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+        <feMorphology radius="1" operator="erode" in="SourceAlpha" result="effect1_innerShadow"/>
+        <feOffset dx="3" dy="3"/>
+        <feGaussianBlur stdDeviation="2.5"/>
+        <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0"/>
+        <feBlend mode="normal" in2="shape" result="effect1_innerShadow"/>
+        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+        <feOffset dx="-3" dy="-3"/>
+        <feGaussianBlur stdDeviation="2.5"/>
+        <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0"/>
+        <feBlend mode="normal" in2="effect1_innerShadow" result="effect2_innerShadow"/>
+        </filter>
+        <filter id="lg_d" x="135" y="106" width="205" height="276" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+        <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+        <feOffset/>
+        <feGaussianBlur stdDeviation="2.5"/>
+        <feComposite in2="hardAlpha" operator="out"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.34 0"/>
+        <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+        <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+        </filter>
+        <radialGradient id="lg_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(240 240) rotate(90) scale(193)">
+        <stop offset="0.480769"/>
+        <stop offset="1" stop-color="white"/>
+        </radialGradient>
+        </defs>
+        </svg>
       </span>
       <span class="label">Blezer</span>
     </a>
@@ -266,24 +307,7 @@
 
   <main>
     <section class="section">
-      <div class="tiles" id="tiles">
-        <div class="tile"><div class="k">在場裝置</div><div class="v" id="t-dev"><span class="sk" style="width:34px"></span></div></div>
-        <div class="tile"><div class="k">已識別</div><div class="v" id="t-known"><span class="sk" style="width:34px"></span></div></div>
-        <div class="tile"><div class="k">觀測筆數</div><div class="v" id="t-obs"><span class="sk" style="width:48px"></span></div></div>
-        <div class="tile"><div class="k">平均訊號</div><div class="v" id="t-rssi"><span class="sk" style="width:56px"></span></div></div>
-      </div>
-    </section>
-
-    <section class="section">
       <div class="card">
-        <div class="card-head"><h2>廠牌分布</h2><span class="count" id="v-count"></span></div>
-        <div class="vendors" id="vendors"></div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="card">
-        <div class="card-head"><h2>即時裝置</h2></div>
         <div class="toolbar">
           <div class="search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -342,6 +366,13 @@
           <button data-theme="system" aria-pressed="false">跟隨系統</button>
         </div>
       </div>
+      <div class="set-group range-group">
+        <div class="section-label">對比</div>
+        <input type="range" class="contrast" id="pref-contrast" min="1" max="3" step="1" value="1"
+          aria-label="邊界對比" list="contrast-ticks">
+        <datalist id="contrast-ticks"><option value="1"></option><option value="2"></option><option value="3"></option></datalist>
+        <div class="range-ticks" aria-hidden="true"><span>標準</span><span>中</span><span>高</span></div>
+      </div>
       <div class="set-group">
         <div class="section-label">預設時間範圍</div>
         <div class="seg" id="pref-window" role="group" aria-label="預設時間範圍">
@@ -382,6 +413,8 @@
         </div>
       </div>
   </section>
+
+  <footer class="copyright">© 2026 Blezer · BLE Analyzer</footer>
 
 <script>
 "use strict";
@@ -439,6 +472,14 @@ function setTheme(t) { localStorage.setItem("pref.theme", t); applyTheme(t); fla
 mqDark.addEventListener("change", () => { if ((localStorage.getItem("pref.theme") || "system") === "system") applyTheme("system"); });
 $("#theme").addEventListener("click", () => setTheme(effectiveTheme() === "dark" ? "light" : "dark"));
 
+/* ── 對比(1 標準 / 2 中 / 3 高):放大邊界不透明度,存 pref.contrast ── */
+function applyContrast(level) {
+  document.documentElement.setAttribute("data-contrast", String(level));
+  const el = $("#pref-contrast"); if (el) el.value = String(level);
+}
+function setContrast(level) { localStorage.setItem("pref.contrast", level); applyContrast(level); flashSaved(); }
+(function initContrast(){ const c = +localStorage.getItem("pref.contrast"); applyContrast([1,2,3].includes(c) ? c : 1); })();
+
 /* ── 顯示偏好 setters(即存即套用,存 localStorage 的 pref.*) ── */
 function setWindow(w) {
   state.window = w; localStorage.setItem("pref.window", w);
@@ -480,17 +521,15 @@ $("#pref-sortdir").addEventListener("click", (e) => { const b = e.target.closest
 $("#pref-timefmt").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { setTimeFmt(b.dataset.fmt); flashSaved(); } });
 $("#pref-sortkey").addEventListener("change", (e) => { setSort(e.target.value, state.sort.dir); flashSaved(); });
 $("#pref-known").addEventListener("change", (e) => { setKnown(e.target.checked); flashSaved(); });
+$("#pref-contrast").addEventListener("input", (e) => setContrast(+e.target.value));
 
 /* ── data ── */
 async function tick() {
   try {
-    const [devs, stats] = await Promise.all([
-      fetch(`/api/devices?window=${state.window}`).then(r => r.json()),
-      fetch(`/api/stats?window=${state.window}`).then(r => r.json()),
-    ]);
+    const devs = await fetch(`/api/devices?window=${state.window}`).then(r => r.json());
     state.devices = devs; state.loaded = true;
     setStatus(true);
-    renderTiles(stats, devs); renderVendors(stats); renderDevices();
+    renderDevices();
     if (state.selected && !devs.some(d => d.id === state.selected)) { /* keep drawer, data may lag */ }
   } catch (e) { setStatus(false); }
 }
@@ -498,26 +537,6 @@ function setStatus(live) {
   const el = $("#status");
   el.classList.toggle("live", live); el.classList.toggle("off", !live);
   $("#statusText").textContent = live ? "即時掃描中" : "連線中斷";
-}
-
-function renderTiles(stats, devs) {
-  const known = devs.filter(isKnown).length;
-  $("#t-dev").textContent = stats.device_count;
-  $("#t-known").textContent = known;
-  $("#t-obs").textContent = (stats.observation_count).toLocaleString();
-  $("#t-rssi").innerHTML = stats.rssi_avg==null ? "—" : `${Math.round(stats.rssi_avg)}<small>dBm</small>`;
-  ["#t-dev","#t-known","#t-obs","#t-rssi"].forEach(s => $(s).classList.add("tnum"));
-}
-
-function renderVendors(stats) {
-  const vs = stats.by_vendor || [];
-  const max = Math.max(1, ...vs.map(v => v.count));
-  $("#v-count").textContent = vs.length ? `${vs.length} 家` : "";
-  $("#vendors").innerHTML = vs.length ? vs.map(v => `
-    <div class="vrow">
-      <span class="name">${esc(v.vendor)}</span><span class="n tnum">${v.count}</span>
-      <span class="meter"><i style="width:${Math.round(v.count/max*100)}%"></i></span>
-    </div>`).join("") : `<p class="muted" style="grid-column:1/-1">尚無資料</p>`;
 }
 
 function skeletonRows() {
@@ -669,6 +688,7 @@ function closeDrawer() {
 // 進入設定頁時把各控制項對齊目前狀態。
 function syncSettingsUI() {
   syncSeg("#pref-theme", "theme", localStorage.getItem("pref.theme") || "system");
+  $("#pref-contrast").value = document.documentElement.getAttribute("data-contrast") || "1";
   syncSeg("#win-seg", "win", state.window); syncSeg("#pref-window", "win", state.window);
   $("#pref-sortkey").value = state.sort.key; syncSeg("#pref-sortdir", "dir", state.sort.dir);
   $("#pref-known").checked = $("#identified").checked;

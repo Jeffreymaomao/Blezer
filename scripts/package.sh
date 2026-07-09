@@ -7,7 +7,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
-APP="$ROOT/dist/Blezer.app"
+# app 一律裝到 Documents/Desktop/Downloads 以外的地方,否則 macOS 會因為
+# 「app 位在受保護資料夾內」而跳出檔案／資料夾權限提示(與 app 是否讀你的
+# 檔案無關)。預設 /Applications;可用 BLE_INSTALL_DIR 覆蓋成 ~/Applications 等。
+INSTALL_DIR="${BLE_INSTALL_DIR:-/Applications}"
+APP="$INSTALL_DIR/Blezer.app"
+mkdir -p "$ROOT/dist" "$INSTALL_DIR"
 
 echo "==> cargo build --release"
 cargo build --release
@@ -65,7 +70,7 @@ PLIST
 
 echo
 echo "完成。"
-echo "  App:   $APP"
+echo "  App:   $APP   (在 Documents 之外,不會再跳「文件資料夾」權限提示)"
 echo "  Agent: $AGENT"
 echo
 echo "背景長駐(開機自動啟動):"
