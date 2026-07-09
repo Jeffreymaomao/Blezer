@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/assets/logo.png" width="160" alt="Blezer logo">
+  <img src="https://raw.githubusercontent.com/Jeffreymaomao/Blezer/main/assets/logo.png" width="160" alt="Blezer logo">
 </p>
 
 <h1 align="center">Blezer</h1>
